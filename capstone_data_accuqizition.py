@@ -4,6 +4,7 @@ import signal
 import requests
 from time import sleep
 import base64
+import json
 
 # this class definition allows us to print error messages and stop the program when needed
 class ApiException(Exception):
@@ -84,59 +85,6 @@ def get_available_assets(session):
 
 
 # this helper method returns all the available securities at the current tick
-'''
-[
-  {
-    "ticker": "string",
-    "type": "SPOT",
-    "size": 0,
-    "position": 0,
-    "vwap": 0,
-    "nlv": 0,
-    "last": 0,
-    "bid": 0,
-    "bid_size": 0,
-    "ask": 0,
-    "ask_size": 0,
-    "volume": 0,
-    "unrealized": 0,
-    "realized": 0,
-    "currency": "string",
-    "total_volume": 0,
-    "limits": [
-      {
-        "name": "string",
-        "units": 0
-      }
-    ],
-    "interest_rate": 0,
-    "is_tradeable": true,
-    "is_shortable": true,
-    "start_period": 0,
-    "stop_period": 0,
-    "description": "string",
-    "unit_multiplier": 0,
-    "display_unit": "string",
-    "start_price": 0,
-    "min_price": 0,
-    "max_price": 0,
-    "quoted_decimals": 0,
-    "trading_fee": 0,
-    "limit_order_rebate": 0,
-    "min_trade_size": 0,
-    "max_trade_size": 0,
-    "required_tickers": "string",
-    "bond_coupon": 0,
-    "interest_payments_per_period": 0,
-    "base_security": "string",
-    "fixing_ticker": "string",
-    "api_orders_per_second": 0,
-    "execution_delay_ms": 0,
-    "interest_rate_ticker": "string",
-    "otc_price_range": 0
-  }
-]
-'''
 def get_available_securities(session):
     response = api_request(session, 'GET', 'securities')
     return response if response else None
@@ -147,9 +95,42 @@ def get_news(session):
     response = api_request(session, 'GET', 'news')
     return response[0] if response else None
 
+
+def get_tradable_securities(securities):
+    """
+    Returns a dictionary with only the securities where 'tradable' is True.
+
+    Parameters:
+        securities (dict): All securities as a dictionary.
+
+    Returns:
+        dict: Dictionary containing only tradable securities.
+    """
+    return {ticker: info for ticker, info in securities.items() if info['is_tradeable']}
+
+
+def get_ask_price(session, securities):
+    """
+    Retrieves the ask prices for each security in the given dictionary.
+
+    Parameters:
+        session (requests.Session): The session to use for API requests.
+        securities (dict): A dictionary of tradable securities.
+
+    Returns:
+        dict: A dictionary containing the ask prices for each security.
+    """
+    ask_prices = {}
+    for ticker in securities.keys():
+        ask_price, _ = ticker_bid_ask(session, ticker)
+        ask_prices[ticker] = ask_price
+    return ask_prices
+
+
 def place_order(session, ticker, order_type, quantity, action):
     api_request(session, 'POST', 'orders', 
                 params={'ticker': ticker, 'type': order_type, 'quantity': quantity, 'action': action})
+
 
 def main():
     with requests.Session() as s:
@@ -163,7 +144,20 @@ def main():
                 prices = get_available_assets(s)
                 # print all the available securities
                 securities = get_available_securities(s)
-                print(securities)
+                
+                # conver the securties to a dictionary
+                securities_dict = {}
+                for security in securities:
+                    securities_dict[security['ticker']] = security
+
+                # get only the tradable securities
+                tradable_securities = get_tradable_securities(securities_dict)
+
+
+                tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
+                
+                print(tradable_securities_ask_prices)
+
                 break
                 
                 
