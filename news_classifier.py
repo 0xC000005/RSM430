@@ -9,8 +9,8 @@ model = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
 model.to(device)
 
 def get_news_sentiments(tokenizer, model, example):
-    tokens = tokenizer.encode(example, return_tensors='pt')
-    result = model(tokens)
+    inputs = tokenizer(example, return_tensors='pt').to(device)
+    result = model(**inputs)
     probabilities = F.softmax(result.logits, dim=1).detach().cpu().numpy().flatten()
     return probabilities
 

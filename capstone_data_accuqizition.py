@@ -178,17 +178,24 @@ def main():
             previous_news = None
             previous_trainable_data = None
             s.headers.update(API_KEY)
-            tick = get_tick(s)
-            period = get_period(s)
-            securities = get_available_securities(s)
-            securities_dict = {}
-            for security in securities:
-                securities_dict[security['ticker']] = security
-            # get only the tradable securities
-            tradable_securities = get_tradable_securities(securities_dict)
+
+            inited = False
     
             while case_active(s) and not shutdown:
                 try:
+                    tick = get_tick(s)
+                    period = get_period(s)
+
+                    if not inited:
+                        securities = get_available_securities(s)
+                        securities_dict = {}
+                        for security in securities:
+                            securities_dict[security['ticker']] = security
+                        # get only the tradable securities
+                        tradable_securities = get_tradable_securities(securities_dict)
+                        inited = True
+                    
+
                     # if there is a news, print it
                     news = get_news(s)
                     news = news_dict_to_string(news)
@@ -211,9 +218,7 @@ def main():
                         previous_trainable_data = trainable_data
                         print(previous_trainable_data)
                 
-                    # IMPORTANT to update the tick at the end of the loop to check that the algorithm should still run or not
-                    tick = get_tick(s)
-                    period = get_period(s)
+
                 except ApiException as e:
                     print(f"API error: {str(e)}")
                     sleep(1)
