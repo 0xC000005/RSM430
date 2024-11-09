@@ -5,6 +5,7 @@ import requests
 from time import sleep
 import base64
 import json
+from datetime import datetime
 
 # this class definition allows us to print error messages and stop the program when needed
 class ApiException(Exception):
@@ -33,6 +34,7 @@ def handle_rate_limit(response):
         return True
     return False
 
+
 # this helper method handles authorization failure.
 def handle_auth_failure(response):
     if response.status_code == 401:
@@ -41,6 +43,7 @@ def handle_auth_failure(response):
         shutdown = True
         return True
     return False
+
 
 # this helper method compiles possible API responses and handlers. 
 def api_request(session, method, endpoint, params=None):
@@ -60,6 +63,7 @@ def api_request(session, method, endpoint, params=None):
             return resp.json()
         raise ApiException(f"API request failed: {resp.text}")
 
+
 # this helper method returns the current 'tick' of the running case
 def get_tick(session):
     response = api_request(session, 'GET', 'case')
@@ -77,6 +81,7 @@ def ticker_bid_ask(session, ticker):
     if response:
         return response['bids'][0]['price'], response['asks'][0]['price']
     return None, None
+
 
 # this helper method returns all available assets at the current tick
 def get_available_assets(session):
@@ -127,47 +132,87 @@ def get_ask_price(session, securities):
     return ask_prices
 
 
+def news_dict_to_string(news):
+    """
+    Converts a dictionary of news to a string.
+
+    Parameters:
+        news (dict): The news dictionary.
+
+    Returns:
+        str: The news as a string.
+    """
+    return f"{news['headline']} - {news['body']}"
+
+
 def place_order(session, ticker, order_type, quantity, action):
     api_request(session, 'POST', 'orders', 
                 params={'ticker': ticker, 'type': order_type, 'quantity': quantity, 'action': action})
 
 
+def compile_trainable_data(session_start_datestr, period, ticker, tradable_securities_ask_prices, news):
+    """
+    Compiles the data to a dict be used for training the model.
+    
+    """
+    trainable_data = {
+        'session_start': session_start_datestr,
+        'period': period,
+        'ticker': ticker,
+        'ask_prices': tradable_securities_ask_prices,
+        'news': news
+    }
+    return trainable_data
+
+
 def main():
-    with requests.Session() as s:
-        s.headers.update(API_KEY)
-        tick = get_tick(s)
-        period = get_period(s)
-        while period >= 0 and period <= 2 and not shutdown:
-            try:
-                # if there is a news, print it
-                news = get_news(s)
-                prices = get_available_assets(s)
-                # print all the available securities
-                securities = get_available_securities(s)
+    while True:
+        session_start_datestr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        news_set = set()
+        previous_trainable_data = None
+        with requests.Session() as s:
+            s.headers.update(API_KEY)
+            tick = get_tick(s)
+            period = get_period(s)
+
+            securities = get_available_securities(s)
+            securities_dict = {}
+            for security in securities:
+                securities_dict[security['ticker']] = security
+            # get only the tradable securities
+            tradable_securities = get_tradable_securities(securities_dict)
+
+            while period >= 0 and period <= 2 and not shutdown:
+                try:
+                    # if there is a news, print it
+                    news = get_news(s)
+                    news = news_dict_to_string(news)
+                    if news not in news_set:
+                        news_set.add(news)
+                    else:
+                        news = None
+
+                    tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
+                    # compile the data to be used for training the model
+                    trainable_data = compile_trainable_data(session_start_datestr, period, tick, tradable_securities_ask_prices, news)
+                    
+
+                    # check if the ticker in the previous trainable data is the same as the current one
+                    if previous_trainable_data is None:
+                        previous_trainable_data = trainable_data
+                        print(previous_trainable_data)
+                    elif previous_trainable_data['ticker'] != trainable_data['ticker']:
+                        previous_trainable_data = trainable_data
+                        print(previous_trainable_data)
                 
-                # conver the securties to a dictionary
-                securities_dict = {}
-                for security in securities:
-                    securities_dict[security['ticker']] = security
 
-                # get only the tradable securities
-                tradable_securities = get_tradable_securities(securities_dict)
+                    # IMPORTANT to update the tick at the end of the loop to check that the algorithm should still run or not
+                    tick = get_tick(s)
+                    period = get_period(s)
 
-
-                tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
-                
-                print(tradable_securities_ask_prices)
-
-                break
-                
-                
-                # IMPORTANT to update the tick at the end of the loop to check that the algorithm should still run or not
-                tick = get_tick(s)
-                period = get_period(s)
-
-            except ApiException as e:
-                print(f"API error: {str(e)}")
-                sleep(1)
+                except ApiException as e:
+                    print(f"API error: {str(e)}")
+                    sleep(1)
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns
