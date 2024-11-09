@@ -165,24 +165,29 @@ def compile_trainable_data(session_start_datestr, period, ticker, tradable_secur
     return trainable_data
 
 
+def case_active(session):
+    response = api_request(session, 'GET', 'case')
+    # if status is ACTIVE, return True
+    return response['status'] == 'ACTIVE'
+
+
 def main():
     while True:
-        session_start_datestr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        previous_news = None
-        previous_trainable_data = None
         with requests.Session() as s:
+            session_start_datestr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            previous_news = None
+            previous_trainable_data = None
             s.headers.update(API_KEY)
             tick = get_tick(s)
             period = get_period(s)
-
             securities = get_available_securities(s)
             securities_dict = {}
             for security in securities:
                 securities_dict[security['ticker']] = security
             # get only the tradable securities
             tradable_securities = get_tradable_securities(securities_dict)
-
-            while period >= 0 and period <= 2 and not shutdown:
+    
+            while case_active(s) and not shutdown:
                 try:
                     # if there is a news, print it
                     news = get_news(s)
@@ -194,12 +199,10 @@ def main():
                         previous_news = news
                     else:
                         news = None
-
                     tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
                     # compile the data to be used for training the model
                     trainable_data = compile_trainable_data(session_start_datestr, period, tick, tradable_securities_ask_prices, news)
                     
-
                     # check if the ticker in the previous trainable data is the same as the current one
                     if previous_trainable_data is None:
                         previous_trainable_data = trainable_data
@@ -208,14 +211,16 @@ def main():
                         previous_trainable_data = trainable_data
                         print(previous_trainable_data)
                 
-
                     # IMPORTANT to update the tick at the end of the loop to check that the algorithm should still run or not
                     tick = get_tick(s)
                     period = get_period(s)
-
                 except ApiException as e:
                     print(f"API error: {str(e)}")
                     sleep(1)
+    
+            while not case_active(s) and not shutdown:
+                print("Waiting for the case to start...")
+                sleep(1)
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns

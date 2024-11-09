@@ -16,6 +16,6 @@ def get_news_sentiments(tokenizer, model, example):
 
 
 if __name__ == '__main__':
-    example = "Stocks rallied and the British pound gained."
+    example = "IRAN TENSION - Iran tested nuclear missiles, and reported that the missile launch was successful, increasing possibility of Canadian military strikes."
     probs = get_news_sentiments(tokenizer, model, example)
     print(probs)
