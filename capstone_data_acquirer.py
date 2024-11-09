@@ -172,17 +172,18 @@ def case_active(session):
 
 
 def main():
-    while True:
-        try:
-            with requests.Session() as s:
+    with requests.Session() as s:
+        s.headers.update(API_KEY)
+        while True and not shutdown:
+            try:
                 session_start_datestr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                tradable_securities = None
+                trainable_data_list = []
                 previous_news = None
                 previous_trainable_data = None
-                s.headers.update(API_KEY)
 
-                tradable_securities = None
-
-                trainable_data_list = []
+                tick = get_tick(s)
+                period = get_period(s)
 
                 while case_active(s) and not shutdown:
                     tick = get_tick(s)
@@ -194,12 +195,9 @@ def main():
                             securities_dict[security['ticker']] = security
                         # get only the tradable securities
                         tradable_securities = get_tradable_securities(securities_dict)
-
-
                     # if there is a news, print it
                     news = get_news(s)
                     news = news_dict_to_string(news)
-
                     if previous_news is None:
                         previous_news = news
                     elif previous_news != news:
@@ -209,7 +207,6 @@ def main():
                     tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
                     # compile the data to be used for training the model
                     trainable_data = compile_trainable_data(session_start_datestr, period, tick, tradable_securities_ask_prices, news)
-
                     # check if the ticker in the previous trainable data is the same as the current one
                     if previous_trainable_data is None:
                         previous_trainable_data = trainable_data
@@ -220,25 +217,37 @@ def main():
                         print(trainable_data)
                         trainable_data_list.append(trainable_data)
 
-                sleep(0.2)
+                    if period == 2 and tick == 311:
+                        # early break
+                        break
+
+                    sleep(0.1)
 
                 if trainable_data_list != []:
-                        print("Storing the data...")
-
-                        # turn the list of trainable data into a pandas dataframe
-
-                        df = pd.DataFrame(trainable_data_list)
-                        table = pa.Table.from_pandas(df)
-                        pq.write_table(table, f"data\data_session_{session_start_datestr}.parquet")
+                    print("Storing the data...")
+                    # turn the list of trainable data into a pandas dataframe
+                    df = pd.DataFrame(trainable_data_list)
+                    table = pa.Table.from_pandas(df)
+                    pq.write_table(table, f"data\data_session_{session_start_datestr}.parquet")
 
 
                 while not case_active(s) and not shutdown:
                     print("Waiting for the case to start...")
                     sleep(1)
-                    
-        except ApiException as e:
-            print(f"API error: {str(e)}")
-            sleep(1)
+
+            # handle all exceptions and print the error message
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                if trainable_data_list != []:
+                    print("Storing any remaining data before restart...")
+                    # turn the list of trainable data into a pandas dataframe
+                    df = pd.DataFrame(trainable_data_list)
+                    table = pa.Table.from_pandas(df)
+                    pq.write_table(table, f"data\data_session_{session_start_datestr}.parquet")
+
+                sleep(1)
+
+
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns
