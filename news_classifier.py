@@ -14,10 +14,8 @@ def get_news_sentiments(tokenizer, model, example):
     probabilities = F.softmax(result.logits, dim=1).detach().cpu().numpy().flatten()
     return probabilities
 
-example = "Stocks rallied and the British pound gained."
-probs = get_news_sentiments(tokenizer, model, example)
-print(probs)
-
 
 if __name__ == '__main__':
-    pass
+    example = "Stocks rallied and the British pound gained."
+    probs = get_news_sentiments(tokenizer, model, example)
+    print(probs)
