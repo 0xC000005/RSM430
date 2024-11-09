@@ -186,6 +186,11 @@ def main():
                 period = get_period(s)
 
                 while case_active(s) and not shutdown:
+                    if period == 2 and tick == 311:
+                        # early break
+                        sleep(1)
+                        break
+
                     tick = get_tick(s)
                     period = get_period(s)
                     if not tradable_securities:
@@ -217,9 +222,7 @@ def main():
                         print(trainable_data)
                         trainable_data_list.append(trainable_data)
 
-                    if period == 2 and tick == 311:
-                        # early break
-                        break
+
 
                     sleep(0.1)
 

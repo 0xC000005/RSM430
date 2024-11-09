@@ -12,7 +12,7 @@ import glob
 # df_list = [pd.read_parquet(file) for file in session_files]
 # combined_df = pd.concat(df_list, ignore_index=True)
 
-df = pd.read_parquet('2024-11-09-11-28-26.parquet')
+df = pd.read_parquet('data/data_session_2024-11-09-13-01-02.parquet')
 
 # get the lists of the keys in the ask_prices column in the first row
 keys = df['ask_prices'].iloc[0].keys()
