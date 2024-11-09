@@ -168,7 +168,7 @@ def compile_trainable_data(session_start_datestr, period, ticker, tradable_secur
 def main():
     while True:
         session_start_datestr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        news_set = set()
+        previous_news = None
         previous_trainable_data = None
         with requests.Session() as s:
             s.headers.update(API_KEY)
@@ -187,8 +187,11 @@ def main():
                     # if there is a news, print it
                     news = get_news(s)
                     news = news_dict_to_string(news)
-                    if news not in news_set:
-                        news_set.add(news)
+                    
+                    if previous_news is None:
+                        previous_news = news
+                    elif previous_news != news:
+                        previous_news = news
                     else:
                         news = None
 
