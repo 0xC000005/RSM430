@@ -173,39 +173,33 @@ def case_active(session):
 
 def main():
     while True:
-        with requests.Session() as s:
-            session_start_datestr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-            previous_news = None
-            previous_trainable_data = None
-            s.headers.update(API_KEY)
+        try:
+            with requests.Session() as s:
+                session_start_datestr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+                previous_news = None
+                previous_trainable_data = None
+                s.headers.update(API_KEY)
 
-            inited = False
+                tradable_securities = None
 
-            data_stored = False
+                trainable_data_list = []
 
-            trainable_data_list = []
-
-            counter = 0
-    
-            while case_active(s) and not shutdown and counter < 10:
-                try:
+                while case_active(s) and not shutdown:
                     tick = get_tick(s)
                     period = get_period(s)
-
-                    if not inited:
+                    if not tradable_securities:
                         securities = get_available_securities(s)
                         securities_dict = {}
                         for security in securities:
                             securities_dict[security['ticker']] = security
                         # get only the tradable securities
                         tradable_securities = get_tradable_securities(securities_dict)
-                        inited = True
-                    
+
 
                     # if there is a news, print it
                     news = get_news(s)
                     news = news_dict_to_string(news)
-                    
+
                     if previous_news is None:
                         previous_news = news
                     elif previous_news != news:
@@ -215,41 +209,36 @@ def main():
                     tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
                     # compile the data to be used for training the model
                     trainable_data = compile_trainable_data(session_start_datestr, period, tick, tradable_securities_ask_prices, news)
-                    
+
                     # check if the ticker in the previous trainable data is the same as the current one
                     if previous_trainable_data is None:
                         previous_trainable_data = trainable_data
                         print(trainable_data)
-                        counter += 1
                         trainable_data_list.append(trainable_data)
                     elif previous_trainable_data['ticker'] != trainable_data['ticker']:
                         previous_trainable_data = trainable_data
                         print(trainable_data)
-                        counter += 1
                         trainable_data_list.append(trainable_data)
-
-                
-
-                except ApiException as e:
-                    print(f"API error: {str(e)}")
-                    sleep(1)
 
                 sleep(0.2)
 
-            if not data_stored and trainable_data_list != []:
-                    print("Storing the data...")
+                if trainable_data_list != []:
+                        print("Storing the data...")
 
-                    # turn the list of trainable data into a pandas dataframe
+                        # turn the list of trainable data into a pandas dataframe
 
-                    df = pd.DataFrame(trainable_data_list)
-                    table = pa.Table.from_pandas(df)
-                    pq.write_table(table, f"data\data_session_{session_start_datestr}.parquet")
+                        df = pd.DataFrame(trainable_data_list)
+                        table = pa.Table.from_pandas(df)
+                        pq.write_table(table, f"data\data_session_{session_start_datestr}.parquet")
+
+
+                while not case_active(s) and not shutdown:
+                    print("Waiting for the case to start...")
+                    sleep(1)
                     
-                    data_stored = True
-    
-            while not case_active(s) and not shutdown:
-                print("Waiting for the case to start...")
-                sleep(1)
+        except ApiException as e:
+            print(f"API error: {str(e)}")
+            sleep(1)
 
 if __name__ == '__main__':
     # register the custom signal handler for graceful shutdowns
