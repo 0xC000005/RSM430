@@ -27,8 +27,11 @@ def get_label_rolling(start_row):
     # drop the session_start
     clipped_data = clipped_data.drop(columns=['session_start'])
 
-    # since news is always n elements, we can expand it into n columns
-    clipped_data = clipped_data.join(pd.DataFrame(clipped_data['news'].tolist())).drop(columns=['news'])
+    # # since news is always n elements, we can expand it into n columns
+    # clipped_data = clipped_data.join(pd.DataFrame(clipped_data['news'].tolist())).drop(columns=['news'])
+
+    # drop the news column since we are not insterested in predicting the news
+    clipped_data = clipped_data.drop(columns=['news'])
 
     # drop the period and ticker columns
     clipped_data = clipped_data.drop(columns=['period', 'ticker'])
@@ -100,11 +103,12 @@ train_data, valid_data = data_utils.random_split(dataset, [int(0.9 * len(dataset
 
 train_loader = data_utils.DataLoader(train_data, batch_size=32, shuffle=True)
 
-input_dim = inputs.shape[0]
+input_dim = inputs.shape
 
-output_dim = labels.shape[0]
+output_dim = labels.shape
 
-# 1943, 1943
+# 3537, 54
+# the input dimension is too much, we cannot process without reducing the dimension
 print(input_dim, output_dim)
 
 
@@ -200,6 +204,8 @@ def train_model(model, train_loader, valid_data, criterion, optimizer, scheduler
             train_loss += loss.item()
         
         avg_train_loss = train_loss / len(train_loader)
+        # display the average training loss
+        print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}')
         
         # Validation phase
         model.eval()
@@ -213,6 +219,7 @@ def train_model(model, train_loader, valid_data, criterion, optimizer, scheduler
                 valid_loss += loss.item()
         
         avg_valid_loss = valid_loss / len(valid_loader)
+        print(f'Epoch [{epoch+1}/{num_epochs}], Valid Loss: {avg_valid_loss:.4f}')
         
         # Learning rate scheduling
         scheduler.step(avg_valid_loss)
