@@ -222,6 +222,7 @@ def main():
                         news_row = average_return.loc[average_return['news'] == news]
                         # from news_row, print the column that has the max and min value besides the news
                         if not news_row.empty:
+                            print(news)
                             # print all the columns besides the news column
                             print(news_row.drop(columns=['news']))
                             # print the max and min column
@@ -237,6 +238,7 @@ def main():
                         news_row = average_return.loc[average_return['news'] == news]
                         # from news_row, print the column that has the max and min value besides the news
                         if not news_row.empty:
+                            print(news)
                             # print all the columns besides the news column
                             print(news_row.drop(columns=['news']))
                             # print the max and min column

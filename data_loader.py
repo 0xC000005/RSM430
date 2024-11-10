@@ -13,7 +13,7 @@ def get_news_tensor(news):
              sentiment_probabilities = news_classifier.get_news_sentiments(news)
              return np.concatenate((sentence_embedding, sentiment_probabilities))
      else:
-         return np.zeros(768 + 3)
+         return None
 
 
 def prepare_dataframe_for_training(path):
@@ -40,8 +40,8 @@ def prepare_dataframe_for_training(path):
 
     df['news'] = df['news'].apply(get_news_tensor)
 
-    # now since news will always have 771 elements, we can expand it into 771 columns
-    df = df.join(pd.DataFrame(df['news'].tolist())).drop(columns=['news'])
+    # # now since news will always have 771 elements, we can expand it into 771 columns
+    # df = df.join(pd.DataFrame(df['news'].tolist())).drop(columns=['news'])
 
     return df
 

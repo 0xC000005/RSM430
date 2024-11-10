@@ -2,3 +2,5 @@
 *.parquet
 *.xlsx
 combined_data.csv
+*.pyc
+__pycache__/data_loader.cpython-310.pyc
