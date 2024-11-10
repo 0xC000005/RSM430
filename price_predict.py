@@ -57,7 +57,7 @@ def make_input_tensor(period, ticker, news):
     return input_tensor
 
 
-tickers_period = 10
+tickers_period = 15
 
 inputs = torch.Tensor([]).to(device)
 labels = torch.Tensor([]).to(device)
@@ -185,7 +185,7 @@ def get_prediction(model, period, ticker, news):
     output = model(input_tensor).detach().cpu().numpy()
 
     # only keep the last 6 elements of the output tensor
-    output = output[-6:]
+    output = output[-6:].reshape(1, -1)
 
     security_columns = ['CorpBondA', 'CorpBondB', 'CorpBondC', 'GovtBondY2', 'GovtBondY5', 'GovtBondY10']
 
