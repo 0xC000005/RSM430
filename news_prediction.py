@@ -175,7 +175,7 @@ def case_active(session):
 def main():
 
     model = price_predict.get_model()
-    
+    average_return = pd.read_csv('average_returns.csv')
 
 
     with requests.Session() as s:
@@ -226,6 +226,18 @@ def main():
                         min_col = prediction.idxmin(axis=1)[0]
                         print(f"Max column: {max_col}, value: {prediction.iloc[0][max_col]}")
                         print(f"Min column: {min_col}, value: {prediction.iloc[0][min_col]}")
+
+                        # look up the row where the news column is the same as the current news
+                        news_row = average_return.loc[average_return['news'] == news]
+                        if not news_row.empty: 
+                            # print all the columns besides the news column
+                            print(news_row.drop(columns=['news']))
+                            # print the max and min column
+                            max_column = news_row.drop(columns=['news']).idxmax(axis=1).values[0]
+                            min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
+                            print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
+                            print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")   
+
                         print("\n")
                 elif previous_trainable_data['ticker'] != trainable_data['ticker']:
                     if news:
@@ -239,6 +251,18 @@ def main():
                         min_col = prediction.idxmin(axis=1)[0]
                         print(f"Max column: {max_col}, value: {prediction.iloc[0][max_col]}")
                         print(f"Min column: {min_col}, value: {prediction.iloc[0][min_col]}")
+
+                        # look up the row where the news column is the same as the current news
+                        news_row = average_return.loc[average_return['news'] == news]
+                        if not news_row.empty: 
+                            # print all the columns besides the news column
+                            print(news_row.drop(columns=['news']))
+                            # print the max and min column
+                            max_column = news_row.drop(columns=['news']).idxmax(axis=1).values[0]
+                            min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
+                            print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
+                            print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
+
                         print("\n")
                 sleep(0.1)
             while not case_active(s) and not shutdown:

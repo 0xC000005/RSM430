@@ -25,9 +25,9 @@ def prepare_dataframe_for_training(path):
     # join the ask_prices column to the dataframe
     df = df.join(pd.json_normalize(df['ask_prices'])).drop(columns=['ask_prices'])
 
-    # change the price in the keys columns to the relative change
-    for key in keys:
-        df[key] = df[key].pct_change()
+    # # change the price in the keys columns to the relative change
+    # for key in keys:
+    #     df[key] = df[key].pct_change()
 
     # drop the first row and reset the index
     df = df.drop(0).reset_index(drop=True)

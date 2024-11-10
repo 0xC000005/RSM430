@@ -81,9 +81,11 @@ for news_row_index in news_row_indices:
 
 
 
-test_data = data_utils.TensorDataset(inputs, labels)
+dataset = data_utils.TensorDataset(inputs, labels)
 
-train_loader = data_utils.DataLoader(test_data, batch_size=32, shuffle=True)
+train_data, valid_data = data_utils.random_split(dataset, [int(0.9 * len(dataset)), len(dataset) - int(0.9 * len(dataset))])
+
+train_loader = data_utils.DataLoader(train_data, batch_size=32, shuffle=True)
 
 input_dim = inputs.shape[1]
 
@@ -161,6 +163,23 @@ def train_model(model, train_loader, num_epochs, learning_rate):
             
             # Update progress bar
             progress_bar.set_postfix({'loss': loss.item()})
+
+        # calcualte the validation loss
+        model.eval()
+        with torch.no_grad():
+            valid_loss = 0
+            valid_batch_count = 0
+            for batch in valid_data:
+                inputs, labels = batch
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                valid_loss += loss.item()
+                valid_batch_count += 1
+            valid_loss = valid_loss / valid_batch_count
+            # display the validation loss
+            print(f'Validation Loss: {valid_loss:.6f}')
         
         # Calculate average epoch loss
         avg_epoch_loss = epoch_loss / batch_count
