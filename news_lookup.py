@@ -230,7 +230,7 @@ def main():
                             min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
                             print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
                             print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
-                        
+                            print("\n")
 
 
                     elif previous_trainable_data['ticker'] != trainable_data['ticker']:
@@ -246,7 +246,7 @@ def main():
                             min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
                             print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
                             print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
-                            
+                            print("\n")
                     sleep(0.1)
 
 
