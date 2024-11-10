@@ -13,7 +13,8 @@ def get_news_tensor(news):
              sentiment_probabilities = news_classifier.get_news_sentiments(news)
              return np.concatenate((sentence_embedding, sentiment_probabilities))
      else:
-         return None
+        #  return None
+        return np.zeros(387, dtype=np.float32)
 
 
 def prepare_dataframe_for_training(path):
