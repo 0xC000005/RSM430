@@ -1,4 +1,4 @@
 *.json
 *.parquet
-*.csv
 *.xlsx
+combined_data.csv

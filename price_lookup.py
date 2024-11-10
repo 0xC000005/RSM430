@@ -27,14 +27,7 @@ def calculate_return_from_news(df, news_row_number, num_tickers):
 
     return accumulated_returns
 
-ticker_of_interest = 10
-
-# find the first row where the news is not None
-first_news_row = combined_df[combined_df['news'].notnull()].index[0]
-print(first_news_row)
-print(calculate_return_from_news(combined_df, first_news_row, ticker_of_interest))
-# print the news
-print(combined_df.iloc[first_news_row]['news'])
+ticker_of_interest = 9
 
 # find all the rows where the news is not None
 news_rows = combined_df[combined_df['news'].notnull()].index
@@ -55,8 +48,28 @@ results = []
 
 for key, value in price_change.items():
     print(key)
-    avg_return = pd.DataFrame(value).mean()
+    # avg_return = pd.DataFrame(value).mean()
+    # before calculating the average, first drop the extreme values (outliers)
+    df_value = pd.DataFrame(value)
+    lower_quantile = df_value.quantile(0.15)
+    print(lower_quantile)
+    upper_quantile = df_value.quantile(0.75)
+    print(upper_quantile)
+
+    # Use inclusive boundaries for the filtering
+    mask = pd.DataFrame()
+    for column in df_value.columns:
+        mask[column] = (df_value[column] >= lower_quantile[column]) & (df_value[column] <= upper_quantile[column])
+    
+    # Apply the mask and calculate mean
+    filtered_df = df_value.where(mask)
+    avg_return = filtered_df.mean()
+    
+    print("\nAverage return after filtering outliers:")
     print(avg_return)
+    
+    
+
     # Append the result to the list
     results.append([key] + avg_return.tolist())
 
