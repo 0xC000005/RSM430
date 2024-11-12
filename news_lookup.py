@@ -171,6 +171,9 @@ def case_active(session):
     return response['status'] == 'ACTIVE'
 
 
+def strip_new_str(new_str):
+    return new_str.replace("\n", "").replace("\r", "").replace("\t", "").strip()
+
 def main():
 
     # load the average_return csv
@@ -219,7 +222,11 @@ def main():
                     if previous_trainable_data is None:
                         previous_trainable_data = trainable_data
                         # look up the row where the news column is the same as the current news
-                        news_row = average_return.loc[average_return['news'] == news]
+                        # news_row = average_return.loc[average_return['news'] == news]
+
+                        news_row = average_return.loc[average_return['news'].apply(strip_new_str) == strip_new_str(news)]
+
+
                         # from news_row, print the column that has the max and min value besides the news
                         if not news_row.empty:
                             print(news)
@@ -235,7 +242,9 @@ def main():
 
                     elif previous_trainable_data['ticker'] != trainable_data['ticker']:
                         previous_trainable_data = trainable_data
-                        news_row = average_return.loc[average_return['news'] == news]
+                        # news_row = average_return.loc[average_return['news'] == news]
+
+                        news_row = average_return.loc[average_return['news'].apply(strip_new_str) == strip_new_str(news)]
                         # from news_row, print the column that has the max and min value besides the news
                         if not news_row.empty:
                             print(news)
