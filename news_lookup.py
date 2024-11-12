@@ -167,10 +167,7 @@ def case_active(session):
     response = api_request(session, 'GET', 'case')
     # if status is ACTIVE, return True
     return response['status'] == 'ACTIVE'
-
-
-def strip_new_str(new_str):
-    return new_str.replace("\n", "").replace("\r", "").replace("\t", "").strip()
+    
 
 def main():
 
@@ -181,10 +178,7 @@ def main():
         s.headers.update(API_KEY)
         while True and not shutdown:
             try:
-                session_start_datestr = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                tradable_securities = None
                 previous_news = None
-                previous_trainable_data = None
 
                 tick = get_tick(s)
                 period = get_period(s)
@@ -197,65 +191,54 @@ def main():
 
                     tick = get_tick(s)
                     period = get_period(s)
-                    if not tradable_securities:
-                        securities = get_available_securities(s)
-                        securities_dict = {}
-                        for security in securities:
-                            securities_dict[security['ticker']] = security
-                        # get only the tradable securities
-                        tradable_securities = get_tradable_securities(securities_dict)
                     # if there is a news, print it
                     news = get_news(s)
                     news = news_dict_to_string(news)
-                    if previous_news is None:
+                    if previous_news is None and news is not None:
                         previous_news = news
-                    elif previous_news != news:
+
+                        # look up the row where the news column is the same as the current news
+                        news_row = average_return.loc[average_return['news'] == news]
+                        # from news_row, print the column that has the max and min value besides the news
+
+                        if news != None:
+                            print(news)
+
+                        if not news_row.empty:
+                            print('Similar news found:' + news_row['news'].values[0])
+                            # print all the columns besides the news column
+                            print(news_row.drop(columns=['news']))
+                            # print the max and min column
+                            max_column = news_row.drop(columns=['news']).idxmax(axis=1).values[0]
+                            min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
+                            print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
+                            print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
+                            print("\n")
+
+                            
+                    elif previous_news != news and news is not None:
                         previous_news = news
+
+                        # look up the row where the news column is the same as the current news
+                        news_row = average_return.loc[average_return['news'] == news]
+                        # from news_row, print the column that has the max and min value besides the news
+
+                        if news != None:
+                            print(news)
+
+                        if not news_row.empty:
+                            print('Similar news found:' + news_row['news'].values[0])
+                            # print all the columns besides the news column
+                            print(news_row.drop(columns=['news']))
+                            # print the max and min column
+                            max_column = news_row.drop(columns=['news']).idxmax(axis=1).values[0]
+                            min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
+                            print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
+                            print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
+                            print("\n")
+
                     else:
                         news = None
-                    tradable_securities_ask_prices = get_ask_price(s, tradable_securities)
-                    # compile the data to be used for training the model
-                    trainable_data = compile_trainable_data(session_start_datestr, period, tick, tradable_securities_ask_prices, news)
-                    # check if the ticker in the previous trainable data is the same as the current one
-                    if previous_trainable_data is None:
-                        previous_trainable_data = trainable_data
-                        # look up the row where the news column is the same as the current news
-                        # news_row = average_return.loc[average_return['news'] == news]
-
-                        news_row = average_return.loc[average_return['news'].apply(strip_new_str) == strip_new_str(news)]
-
-
-                        # from news_row, print the column that has the max and min value besides the news
-                        if not news_row.empty:
-                            print(news)
-                            # print all the columns besides the news column
-                            print(news_row.drop(columns=['news']))
-                            # print the max and min column
-                            max_column = news_row.drop(columns=['news']).idxmax(axis=1).values[0]
-                            min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
-                            print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
-                            print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
-                            print("\n")
-
-
-                    elif previous_trainable_data['ticker'] != trainable_data['ticker']:
-                        previous_trainable_data = trainable_data
-                        # news_row = average_return.loc[average_return['news'] == news]
-
-                        news_row = average_return.loc[average_return['news'].apply(strip_new_str) == strip_new_str(news)]
-                        # from news_row, print the column that has the max and min value besides the news
-                        if not news_row.empty:
-                            print(news)
-                            # print all the columns besides the news column
-                            print(news_row.drop(columns=['news']))
-                            # print the max and min column
-                            max_column = news_row.drop(columns=['news']).idxmax(axis=1).values[0]
-                            min_column = news_row.drop(columns=['news']).idxmin(axis=1).values[0]
-                            print(f"Max column: {max_column}, value: {news_row[max_column].values[0]}")
-                            print(f"Min column: {min_column}, value: {news_row[min_column].values[0]}")
-                            print("\n")
-                    sleep(0.1)
-
 
                 while not case_active(s) and not shutdown:
                     print("Waiting for the case to start...")
