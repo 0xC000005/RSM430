@@ -4,8 +4,6 @@ import requests
 from time import sleep
 from datetime import datetime
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 # this class definition allows us to print error messages and stop the program when needed
 class ApiException(Exception):
