@@ -1,3 +1,4 @@
+```mermaid
 flowchart TB
     subgraph News_Processing ["News Processing"]
         A1["News Text"] --> A2["Sentence Embeddings<br/>(768-dim BERT)"]
@@ -23,3 +24,4 @@ flowchart TB
     style News_Processing fill:#e6f3ff
     style Price_Processing fill:#ffe6e6
     style Neural_Network fill:#e6ffe6
+```
